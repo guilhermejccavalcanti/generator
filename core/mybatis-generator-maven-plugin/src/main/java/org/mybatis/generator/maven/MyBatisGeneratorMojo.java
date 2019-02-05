@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
-
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -38,6 +37,7 @@ import org.mybatis.generator.internal.ObjectFactory;
 import org.mybatis.generator.internal.util.ClassloaderUtility;
 import org.mybatis.generator.internal.util.StringUtility;
 import org.mybatis.generator.internal.util.messages.Messages;
+import org.mybatis.generator.logging.LogFactory;
 
 /**
  * Goal which generates MyBatis/iBATIS artifacts.
@@ -148,40 +148,35 @@ public class MyBatisGeneratorMojo extends AbstractMojo {
 
     public void execute() throws MojoExecutionException {
         if (skip) {
-            getLog().info( "MyBatis generator is skipped." );
+            getLog().info("MyBatis generator is skipped.");
             return;
         }
-
+        LogFactory.setLogFactory(new MavenLogFactory(this));
         // add resource directories to the classpath.  This is required to support
         // use of a properties file in the build.  Typically, the properties file
-        // is in the project's source tree, but the plugin classpath does not 
+        // is in the project's source tree, but the plugin classpath does not
         // include the project classpath.
-        @SuppressWarnings("unchecked")
-        List<Resource> resources = project.getResources();
+        @SuppressWarnings("unchecked") List<Resource> resources = project.getResources();
         List<String> resourceDirectories = new ArrayList<String>();
-        for (Resource resource: resources) {
+        for (Resource resource : resources) {
             resourceDirectories.add(resource.getDirectory());
         }
         ClassLoader cl = ClassloaderUtility.getCustomClassloader(resourceDirectories);
         ObjectFactory.addResourceClassLoader(cl);
-
         if (configurationFile == null) {
-            throw new MojoExecutionException(
-                    Messages.getString("RuntimeError.0")); //$NON-NLS-1$
+            throw new MojoExecutionException(//$NON-NLS-1$
+            Messages.getString("RuntimeError.0"));
         }
-
         List<String> warnings = new ArrayList<String>();
-
         if (!configurationFile.exists()) {
-            throw new MojoExecutionException(Messages.getString(
-                    "RuntimeError.1", configurationFile.toString())); //$NON-NLS-1$
+            throw new MojoExecutionException(Messages.getString("RuntimeError.1", //$NON-NLS-1$
+            configurationFile.toString()));
         }
-
         runScriptIfNecessary();
-
         Set<String> fullyqualifiedTables = new HashSet<String>();
         if (StringUtility.stringHasValue(tableNames)) {
-            StringTokenizer st = new StringTokenizer(tableNames, ","); //$NON-NLS-1$
+            //$NON-NLS-1$
+            StringTokenizer st = new StringTokenizer(tableNames, ",");
             while (st.hasMoreTokens()) {
                 String s = st.nextToken().trim();
                 if (s.length() > 0) {
@@ -189,10 +184,10 @@ public class MyBatisGeneratorMojo extends AbstractMojo {
                 }
             }
         }
-
         Set<String> contextsToRun = new HashSet<String>();
         if (StringUtility.stringHasValue(contexts)) {
-            StringTokenizer st = new StringTokenizer(contexts, ","); //$NON-NLS-1$
+            //$NON-NLS-1$
+            StringTokenizer st = new StringTokenizer(contexts, ",");
             while (st.hasMoreTokens()) {
                 String s = st.nextToken().trim();
                 if (s.length() > 0) {
@@ -200,25 +195,16 @@ public class MyBatisGeneratorMojo extends AbstractMojo {
                 }
             }
         }
-
         try {
-            ConfigurationParser cp = new ConfigurationParser(
-                    project.getProperties(), warnings);
+            ConfigurationParser cp = new ConfigurationParser(project.getProperties(), warnings);
             Configuration config = cp.parseConfiguration(configurationFile);
-
             ShellCallback callback = new MavenShellCallback(this, overwrite);
-
-            MyBatisGenerator myBatisGenerator = new MyBatisGenerator(config,
-                    callback, warnings);
-
-            myBatisGenerator.generate(new MavenProgressCallback(getLog(),
-                    verbose), contextsToRun, fullyqualifiedTables);
-
+            MyBatisGenerator myBatisGenerator = new MyBatisGenerator(config, callback, warnings);
+            myBatisGenerator.generate(new MavenProgressCallback(getLog(), verbose), contextsToRun, fullyqualifiedTables);
         } catch (XMLParserException e) {
             for (String error : e.getErrors()) {
                 getLog().error(error);
             }
-
             throw new MojoExecutionException(e.getMessage());
         } catch (SQLException e) {
             throw new MojoExecutionException(e.getMessage());
@@ -228,21 +214,15 @@ public class MyBatisGeneratorMojo extends AbstractMojo {
             for (String error : e.getErrors()) {
                 getLog().error(error);
             }
-
             throw new MojoExecutionException(e.getMessage());
         } catch (InterruptedException e) {
-            // ignore (will never happen with the DefaultShellCallback)
             ;
         }
-
         for (String error : warnings) {
             getLog().warn(error);
         }
-
-        if (project != null && outputDirectory != null
-                && outputDirectory.exists()) {
+        if (project != null && outputDirectory != null && outputDirectory.exists()) {
             project.addCompileSourceRoot(outputDirectory.getAbsolutePath());
-
             Resource resource = new Resource();
             resource.setDirectory(outputDirectory.getAbsolutePath());
             resource.addInclude("**/*.xml");
@@ -254,9 +234,7 @@ public class MyBatisGeneratorMojo extends AbstractMojo {
         if (sqlScript == null) {
             return;
         }
-
-        SqlScriptRunner scriptRunner = new SqlScriptRunner(sqlScript,
-                jdbcDriver, jdbcURL, jdbcUserId, jdbcPassword);
+        SqlScriptRunner scriptRunner = new SqlScriptRunner(sqlScript, jdbcDriver, jdbcURL, jdbcUserId, jdbcPassword);
         scriptRunner.setLog(getLog());
         scriptRunner.executeScript();
     }
